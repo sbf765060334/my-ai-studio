@@ -39,14 +39,14 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <div className="flex flex-col items-center justify-center px-4 pt-16">
+      <div className="flex flex-col items-center justify-center px-4 pt-32">
         {/* Title Section */}
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
             <span className="text-white text-sm font-bold">Z</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Zivision 让设计更简单1213
+            Zivision 让设计更简单
           </h1>
         </div>
 
@@ -77,7 +77,10 @@ export default function Home() {
             <div className="z-1 flex w-full items-end justify-between text-sm">
               {/* Left - Attachment Button */}
               <div className="flex h-8 items-center gap-[2px]">
-                <button className="flex items-center justify-center w-8 h-8 rounded-full border-[0.5px] border-[#C4C4C4] bg-transparent text-[#363636] hover:bg-[#0C0C0D0A] active:bg-[#0C0C0D14] cursor-pointer transition-[border-color,background-color] duration-100 ease-in-out">
+                <button
+                  className="flex items-center justify-center w-8 h-8 rounded-full border-[0.5px] border-[#C4C4C4] bg-transparent text-[#363636] hover:bg-[#0C0C0D0A] active:bg-[#0C0C0D14] cursor-pointer transition-[border-color,background-color] duration-100 ease-in-out"
+                  title="上传文件"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="14"
@@ -96,7 +99,10 @@ export default function Home() {
               {/* Right - Action Buttons */}
               <div className="flex items-center gap-2">
                 {/* Send Button */}
-                <button className="h-8 min-w-8 rounded-full bg-[#2F3640] text-white flex items-center justify-center hover:bg-[#4A535F] active:bg-[#191E26] cursor-pointer disabled:cursor-not-allowed disabled:opacity-30">
+                <button
+                  className="h-8 min-w-8 rounded-full bg-[#2F3640] text-white flex items-center justify-center hover:bg-[#4A535F] active:bg-[#191E26] cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+                  title="发送"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="14"
