@@ -1,4 +1,4 @@
-import type { Config } from "tailwindcss";
+import type { Config } from "tailwindcss"
 
 const config: Config = {
   // 关键：确保这里包含了 src 目录下的所有文件
@@ -16,5 +16,5 @@ const config: Config = {
     },
   },
   plugins: [],
-};
-export default config;
+}
+export default config

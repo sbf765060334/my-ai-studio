@@ -1,10 +1,10 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
-import prettier from "eslint-plugin-prettier";
-import prettierConfig from "eslint-config-prettier";
+import { defineConfig, globalIgnores } from "eslint/config"
+import nextVitals from "eslint-config-next/core-web-vitals"
+import nextTs from "eslint-config-next/typescript"
+import tseslint from "@typescript-eslint/eslint-plugin"
+import tsParser from "@typescript-eslint/parser"
+import prettier from "eslint-plugin-prettier"
+import prettierConfig from "eslint-config-prettier"
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -44,6 +44,8 @@ const eslintConfig = defineConfig([
     rules: {
       ...prettierConfig.rules,
       "prettier/prettier": "error",
+      semi: ["error", "never"], // 告诉 ESLint 不要分号
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
 
@@ -54,6 +56,6 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "node_modules/**",
   ]),
-]);
+])
 
-export default eslintConfig;
+export default eslintConfig
