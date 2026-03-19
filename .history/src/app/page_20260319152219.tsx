@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 
 // 模拟历史项目数据类型
 interface RecentProject {
@@ -12,16 +12,6 @@ interface RecentProject {
 
 export default function Home() {
   const [inputValue, setInputValue] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // 自动调整 textarea 高度
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 240)}px`;
-    }
-  }, [inputValue]);
 
   // 模拟历史项目数据 - 设为空数组表示没有历史记录
   const [recentProjects] = useState<RecentProject[]>([]);
@@ -58,18 +48,11 @@ export default function Home() {
             {/* Text Input Area */}
             <div className="relative flex-1 w-full text-sm leading-[25px] text-[#363636]">
               <textarea
-                ref={textareaRef}
                 placeholder="让 Zivision 打造引人注目的社交媒体视觉"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="relative z-[1] w-full cursor-text px-1 bg-transparent outline-none resize-none text-sm leading-[25px] text-[#363636] placeholder-[#999]"
-                style={{
-                  minHeight: "56px",
-                  maxHeight: "240px",
-                  overflowY: "auto",
-                  scrollbarWidth: "none",
-                }}
-                rows={1}
+                className="relative z-[1] max-h-60 min-h-14 w-full cursor-text px-1 bg-transparent outline-none resize-none text-sm leading-[25px] text-[#363636] placeholder-[#999]"
+                style={{ tabSize: 1, scrollbarWidth: "none" }}
               />
             </div>
 

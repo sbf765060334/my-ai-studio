@@ -64,10 +64,10 @@ export default function Home() {
                 onChange={(e) => setInputValue(e.target.value)}
                 className="relative z-[1] w-full cursor-text px-1 bg-transparent outline-none resize-none text-sm leading-[25px] text-[#363636] placeholder-[#999]"
                 style={{
+                  tabSize: 1,
                   minHeight: "56px",
                   maxHeight: "240px",
                   overflowY: "auto",
-                  scrollbarWidth: "none",
                 }}
                 rows={1}
               />
