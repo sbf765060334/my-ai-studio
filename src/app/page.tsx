@@ -46,7 +46,7 @@ export default function Home() {
             <span className="text-white text-sm font-bold">Z</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Zivision 让设计更简单
+            Zivision 让设计更简单1213
           </h1>
         </div>
 
@@ -62,7 +62,7 @@ export default function Home() {
                 placeholder="让 Zivision 打造引人注目的社交媒体视觉"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="relative z-[1] w-full cursor-text px-1 bg-transparent outline-none resize-none text-sm leading-[25px] text-[#363636] placeholder-[#999]"
+                className="relative z-1 w-full cursor-text px-1 bg-transparent outline-none resize-none text-sm leading-[25px] text-[#363636] placeholder-[#999]"
                 style={{
                   minHeight: "56px",
                   maxHeight: "240px",
@@ -74,7 +74,7 @@ export default function Home() {
             </div>
 
             {/* Bottom Toolbar */}
-            <div className="z-[1] flex w-full items-end justify-between text-sm">
+            <div className="z-1 flex w-full items-end justify-between text-sm">
               {/* Left - Attachment Button */}
               <div className="flex h-8 items-center gap-[2px]">
                 <button className="flex items-center justify-center w-8 h-8 rounded-full border-[0.5px] border-[#C4C4C4] bg-transparent text-[#363636] hover:bg-[#0C0C0D0A] active:bg-[#0C0C0D14] cursor-pointer transition-[border-color,background-color] duration-100 ease-in-out">
