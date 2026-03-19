@@ -1,8 +1,8 @@
 "use client";
+import React, { useState } from "react";
+import { Upload, Input, Button, message } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
-import { Button, Input, message, Upload } from "antd";
-import { useState } from "react";
-import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 const { Dragger } = Upload;
 const { TextArea } = Input;

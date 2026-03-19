@@ -1,27 +1,24 @@
 "use client";
-import { InboxOutlined } from "@ant-design/icons";
-import { Button, Input, message, Upload } from "antd";
-import { useState } from "react";
-import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import React, { useState } from 'react';
+import { Upload, Input, Button, message } from 'antd';
+import { InboxOutlined } from '@ant-design/icons';
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
 
 export default function AIStudio() {
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState('');
   const [images, setImages] = useState<string[]>([]); // 存储生成的图片URL
 
   // 模拟生成图片的逻辑
   const handleGenerate = () => {
-    if (!prompt) return message.warning("请输入提示词");
-    message.loading("AI 正在努力绘画中...");
+    if (!prompt) return message.warning('请输入提示词');
+    message.loading('AI 正在努力绘画中...');
     // 模拟调用 API 返回一张图
     setTimeout(() => {
-      setImages([
-        ...images,
-        `https://picsum.photos/400/300?random=${Math.random()}`,
-      ]);
-      message.success("生成成功！");
+      setImages([...images, `https://picsum.photos/400/300?random=${Math.random()}`]);
+      message.success('生成成功！');
     }, 2000);
   };
 
@@ -30,37 +27,30 @@ export default function AIStudio() {
       {/* 左侧：操作区 (30% 宽度) */}
       <section className="w-[350px] border-r bg-white p-6 flex flex-col gap-6 shadow-sm">
         <h2 className="text-xl font-bold border-b pb-4">AI 控制台</h2>
-
+        
         <div>
           <p className="mb-2 font-medium">1. 上传参考图</p>
-          <Dragger
-            multiple={false}
+          <Dragger 
+            multiple={false} 
             action="/api/upload" // 这里对接你的 Next.js API 或直接 OSS
             className="bg-gray-50"
           >
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
+            <p className="ant-upload-drag-icon"><InboxOutlined /></p>
             <p className="ant-upload-text">点击或拖拽图片到此处</p>
           </Dragger>
         </div>
 
         <div>
           <p className="mb-2 font-medium">2. 输入提示词</p>
-          <TextArea
-            rows={6}
-            placeholder="描述你想要的画面..."
+          <TextArea 
+            rows={6} 
+            placeholder="描述你想要的画面..." 
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
         </div>
 
-        <Button
-          type="primary"
-          size="large"
-          onClick={handleGenerate}
-          className="w-full h-12"
-        >
+        <Button type="primary" size="large" onClick={handleGenerate} className="w-full h-12">
           立即生成图片
         </Button>
       </section>
@@ -70,7 +60,7 @@ export default function AIStudio() {
         <div className="absolute top-4 left-4 z-10 bg-white/80 px-3 py-1 rounded-full text-xs text-gray-500 shadow-sm">
           💡 提示：按住鼠标左键拖动，滚轮放大缩小
         </div>
-
+        
         <TransformWrapper
           initialScale={1}
           minScale={0.1}
@@ -89,18 +79,12 @@ export default function AIStudio() {
               <TransformComponent wrapperClass="!w-full !h-full">
                 <div className="flex flex-wrap gap-8 p-20 min-w-[2000px] min-h-[2000px]">
                   {images.map((url, index) => (
-                    <div
-                      key={index}
+                    <div 
+                      key={index} 
                       className="bg-white p-2 shadow-2xl rounded-lg cursor-move hover:ring-2 ring-blue-500 transition-all"
                     >
-                      <img
-                        src={url}
-                        alt="Generated"
-                        className="max-w-[300px] rounded"
-                      />
-                      <p className="text-[10px] text-gray-400 mt-2">
-                        ID: #{index + 1}
-                      </p>
+                      <img src={url} alt="Generated" className="max-w-[300px] rounded" />
+                      <p className="text-[10px] text-gray-400 mt-2">ID: #{index + 1}</p>
                     </div>
                   ))}
                   {images.length === 0 && (
