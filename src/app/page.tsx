@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { uploadImage } from "@/lib/upload"
 import Image from "next/image"
+import { message } from "antd"
 
 // 上传的图片类型
 interface UploadedImage {
@@ -52,7 +53,7 @@ export default function Home() {
       for (const file of Array.from(files)) {
         // 验证文件类型
         if (!file.type.startsWith("image/")) {
-          alert(`${file.name} 不是图片文件`)
+          message.warning(`${file.name} 不是图片文件`)
           continue
         }
 

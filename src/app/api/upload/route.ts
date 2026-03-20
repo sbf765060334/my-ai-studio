@@ -19,6 +19,19 @@ function generateFileName(originalName: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  // 检查环境变量是否配置
+  if (
+    !process.env.OSS_ACCESS_KEY_ID ||
+    !process.env.OSS_ACCESS_KEY_SECRET ||
+    !process.env.OSS_BUCKET
+  ) {
+    console.error("OSS 环境变量未配置")
+    return NextResponse.json(
+      { error: "服务器配置错误：OSS 环境变量未配置" },
+      { status: 500 }
+    )
+  }
+
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File
