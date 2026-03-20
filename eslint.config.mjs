@@ -10,6 +10,15 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
 
+  // Next.js 规则覆盖
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+    rules: {
+      // 允许使用原生 img 标签（外部动态图片无需 Next.js 优化）
+      "@next/next/no-img-element": "off",
+    },
+  },
+
   // TypeScript 类型检查
   {
     files: ["**/*.ts", "**/*.tsx"],

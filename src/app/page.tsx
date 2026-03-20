@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
 import { uploadImage } from "@/lib/upload"
-import Image from "next/image"
 import { message } from "antd"
+import { useEffect, useRef, useState } from "react"
 
 // 上传的图片类型
 interface UploadedImage {
@@ -130,7 +129,7 @@ export default function Home() {
               <div className="flex flex-wrap gap-2 px-1">
                 {uploadedImages.map((image, index) => (
                   <div key={index} className="relative group">
-                    <Image
+                    <img
                       src={image.url}
                       alt={image.name}
                       className="w-16 h-16 object-cover rounded-lg border border-[#E3E3E3]"
@@ -238,7 +237,7 @@ export default function Home() {
                 >
                   <div className="aspect-4/3 bg-gray-100 flex items-center justify-center">
                     {project.thumbnail ? (
-                      <Image
+                      <img
                         src={project.thumbnail}
                         alt={project.title}
                         className="w-full h-full object-cover"
