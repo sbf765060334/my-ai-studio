@@ -1,15 +1,16 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
+import * as HoverCard from "@radix-ui/react-hover-card"
 import {
-  DecoratorNode,
   $getSelection,
-  $isRangeSelection,
   $isNodeSelection,
+  $isRangeSelection,
+  DecoratorNode,
   type EditorConfig,
   type NodeKey,
   type SerializedLexicalNode,
   type Spread,
 } from "lexical"
-import * as HoverCard from "@radix-ui/react-hover-card"
+import { LoaderCircle } from "lucide-react"
 import { useEffect, useState, type JSX } from "react"
 
 // 序列化数据结构
@@ -98,6 +99,12 @@ export class ImageTagNode extends DecoratorNode<JSX.Element> {
   getName(): string {
     return this.__name
   }
+
+  // 设置图片 URL（用于上传完成后更新）
+  setSrc(src: string): void {
+    const writable = this.getWritable()
+    writable.__src = src
+  }
 }
 
 // 图片标签 React 组件
@@ -146,41 +153,54 @@ function ImageTagComponent({
 
   // 计算最终样式：鼠标悬浮或光标在附近都显示高亮
   const isActive = isHovered || isCursorNearby
+  const isLoading = src === ""
+
+  const tagContent = (
+    <span
+      data-image-node-key={nodeKey}
+      className={`
+        inline-flex items-center gap-1 px-1.5 h-[20px] mx-0.5
+        rounded-full border align-text-bottom select-none
+        transition-all duration-150 ease-in-out
+        ${
+          isLoading
+            ? "bg-gray-50 border-gray-300"
+            : isActive
+              ? "bg-blue-50 border-blue-400 shadow-sm ring-1 ring-blue-200"
+              : "bg-gray-50 border-gray-300 hover:bg-gray-100"
+        }
+      `}
+      contentEditable={false}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {isLoading ? (
+        <LoaderCircle className="animate-spin w-3.5 h-3.5 text-gray-400 shrink-0" />
+      ) : (
+        <img
+          src={src}
+          alt={name}
+          className="w-4 h-4 object-cover rounded-full shrink-0"
+        />
+      )}
+      <span
+        className={`
+        text-[13px] whitespace-nowrap leading-none
+        ${isLoading ? "text-gray-400" : isActive ? "text-blue-700" : "text-gray-700"}
+      `}
+      >
+        {truncateText(name, 10)}
+      </span>
+    </span>
+  )
+
+  if (isLoading) {
+    return tagContent
+  }
 
   return (
     <HoverCard.Root openDelay={400} closeDelay={100}>
-      <HoverCard.Trigger asChild>
-        <span
-          data-image-node-key={nodeKey}
-          className={`
-            inline-flex items-center gap-1 px-1.5 h-[20px] mx-0.5
-            rounded-full border align-text-bottom select-none
-            transition-all duration-150 ease-in-out
-            ${
-              isActive
-                ? "bg-blue-50 border-blue-400 shadow-sm ring-1 ring-blue-200"
-                : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-            }
-          `}
-          contentEditable={false}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          <img
-            src={src}
-            alt={name}
-            className="w-4 h-4 object-cover rounded-full shrink-0"
-          />
-          <span
-            className={`
-            text-[13px] whitespace-nowrap leading-none
-            ${isActive ? "text-blue-700" : "text-gray-700"}
-          `}
-          >
-            {truncateText(name, 10)}
-          </span>
-        </span>
-      </HoverCard.Trigger>
+      <HoverCard.Trigger asChild>{tagContent}</HoverCard.Trigger>
       <HoverCard.Portal>
         <HoverCard.Content
           side="top"

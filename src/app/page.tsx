@@ -2,10 +2,14 @@
 
 import { uploadImage } from "@/lib/upload"
 import { ZivisionEditor } from "@/components/editor"
-import { $createImageTagNode } from "@/components/editor/ImageTagNode"
+import {
+  $createImageTagNode,
+  $isImageTagNode,
+} from "@/components/editor/ImageTagNode"
 import { message } from "antd"
-import { $getSelection } from "lexical"
+import { $getSelection, $getNodeByKey } from "lexical"
 import { type LexicalEditor } from "lexical"
+import { ArrowUp, Paperclip } from "lucide-react"
 import { useRef, useState } from "react"
 
 // 上传的图片类型
@@ -26,7 +30,6 @@ interface RecentProject {
 export default function Home() {
   const [inputValue, setInputValue] = useState("")
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([])
-  const [isUploading, setIsUploading] = useState(false)
   const editorRef = useRef<LexicalEditor | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -74,32 +77,71 @@ export default function Home() {
     fileInputRef.current?.click()
   }
 
-  // 处理文件选择
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 处理文件选择 - 先插入 loading 节点，后台上传
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    setIsUploading(true)
-    try {
-      for (const file of Array.from(files)) {
-        const result = await handleImageUpload(file)
-        if (result && editorRef.current) {
-          // 在编辑器中插入图片标签
-          editorRef.current.update(() => {
-            const selection = $getSelection()
-            if (selection) {
-              const imageNode = $createImageTagNode(result.url, result.name)
-              selection.insertNodes([imageNode])
+    const editor = editorRef.current
+    if (!editor) return
+
+    for (const file of Array.from(files)) {
+      // 验证文件类型
+      if (!file.type.startsWith("image/")) {
+        message.warning(`${file.name} 不是图片文件`)
+        continue
+      }
+
+      // 1. 立即插入 loading 节点，获取 nodeKey
+      let nodeKey: string | null = null
+      editor.update(() => {
+        const selection = $getSelection()
+        if (selection) {
+          const imageNode = $createImageTagNode("", file.name)
+          selection.insertNodes([imageNode])
+          nodeKey = imageNode.getKey()
+        }
+      })
+
+      if (!nodeKey) continue
+
+      // 2. 后台上传，捕获 nodeKey
+      const capturedKey = nodeKey
+      uploadImage(file)
+        .then((url) => {
+          const newImage: UploadedImage = {
+            id: generateId(),
+            url,
+            name: file.name,
+          }
+          setUploadedImages((prev) => [...prev, newImage])
+
+          // 3. 上传成功 → 更新节点 src
+          editor.update(() => {
+            const node = $getNodeByKey(capturedKey)
+            if (node && $isImageTagNode(node)) {
+              node.setSrc(url)
+            }
+            // 节点已被删除则静默忽略
+          })
+        })
+        .catch((error) => {
+          console.error("上传失败:", error)
+          message.error(`${file.name} 上传失败`)
+
+          // 4. 上传失败 → 删除 loading 节点
+          editor.update(() => {
+            const node = $getNodeByKey(capturedKey)
+            if (node && $isImageTagNode(node)) {
+              node.remove()
             }
           })
-        }
-      }
-    } finally {
-      setIsUploading(false)
-      // 清空 input，允许重复选择同一文件
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
+        })
+    }
+
+    // 清空 input，允许重复选择同一文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
     }
   }
 
@@ -157,41 +199,10 @@ export default function Home() {
                 />
                 <button
                   onClick={handleUploadClick}
-                  disabled={isUploading}
-                  className="flex items-center justify-center w-8 h-8 rounded-full border-[0.5px] border-[#C4C4C4] bg-transparent text-[#363636] hover:bg-[#0C0C0D0A] active:bg-[#0C0C0D14] cursor-pointer transition-[border-color,background-color] duration-100 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center w-8 h-8 rounded-full border-[0.5px] border-[#C4C4C4] bg-transparent text-[#363636] hover:bg-[#0C0C0D0A] active:bg-[#0C0C0D14] cursor-pointer transition-[border-color,background-color] duration-100 ease-in-out"
                   title="上传图片"
                 >
-                  {isUploading ? (
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="M16 1.1A4.9 4.9 0 0 1 20.9 6a4.9 4.9 0 0 1-1.429 3.457h.001l-8.414 8.587-.007.006a2.9 2.9 0 0 1-3.887.193l-.213-.192a2.9 2.9 0 0 1-.007-4.095l8.414-8.586a.9.9 0 0 1 1.286 1.26L8.23 15.216l-.007.006a1.1 1.1 0 0 0 1.556 1.555l8.407-8.579.007-.007a3.1 3.1 0 0 0 .105-4.271l-.105-.112a3.1 3.1 0 0 0-4.384 0L5.4 12.387l-.007.006a5.1 5.1 0 0 0 7.214 7.213l7.749-7.934a.9.9 0 0 1 1.288 1.256l-7.753 7.938q-.005.007-.012.014a6.9 6.9 0 0 1-9.758-9.76l8.408-8.578.007-.007A4.9 4.9 0 0 1 16 1.1"
-                      />
-                    </svg>
-                  )}
+                  <Paperclip className="w-3.5 h-3.5" />
                 </button>
 
                 {/* 图片计数徽章 */}
@@ -209,18 +220,7 @@ export default function Home() {
                   className="h-8 min-w-8 rounded-full bg-[#2F3640] text-white flex items-center justify-center hover:bg-[#4A535F] active:bg-[#191E26] cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
                   title="发送"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M11.293 3.293a1 1 0 0 1 1.414 0l8 8a1 1 0 0 1-1.414 1.414L13 6.414V20a1 1 0 1 1-2 0V6.414l-6.293 6.293a1 1 0 0 1-1.414-1.414z"
-                    />
-                  </svg>
+                  <ArrowUp className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
