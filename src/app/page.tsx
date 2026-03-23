@@ -11,7 +11,7 @@ import { message } from "antd"
 import { $getSelection, $getNodeByKey } from "lexical"
 import { type LexicalEditor } from "lexical"
 import { ArrowUp, Paperclip } from "lucide-react"
-import { useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 
 // 模拟历史项目数据类型
 interface RecentProject {
@@ -26,13 +26,18 @@ export default function Home() {
   const [imageCount, setImageCount] = useState(0)
   const editorRef = useRef<LexicalEditor | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // 用于标记 mutation listener 是否已注册
+  const mutationListenerRegisteredRef = useRef(false)
 
   // 模拟历史项目数据 - 设为空数组表示没有历史记录
   const [recentProjects] = useState<RecentProject[]>([])
 
   // 编辑器准备就绪回调
-  const handleEditorReady = (editor: LexicalEditor) => {
+  const handleEditorReady = useCallback((editor: LexicalEditor) => {
     editorRef.current = editor
+    // 防止重复注册监听器
+    if (mutationListenerRegisteredRef.current) return
+    mutationListenerRegisteredRef.current = true
     // 监听 ImageTagNode 的增删变动，实时更新计数
     editor.registerMutationListener(ImageTagNode, (mutations) => {
       let delta = 0
@@ -44,7 +49,7 @@ export default function Home() {
         setImageCount((prev) => Math.max(0, prev + delta))
       }
     })
-  }
+  }, [])
 
   // 编辑器内容变化回调
   const handleEditorChange = (content: string) => {
