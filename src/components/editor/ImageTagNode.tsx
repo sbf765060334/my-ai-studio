@@ -1,13 +1,16 @@
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import {
   DecoratorNode,
   $getSelection,
   $isRangeSelection,
+  $isNodeSelection,
   type EditorConfig,
   type NodeKey,
   type SerializedLexicalNode,
   type Spread,
 } from "lexical"
-import { useEffect, useState, useRef, type JSX } from "react"
+import * as HoverCard from "@radix-ui/react-hover-card"
+import { useEffect, useState, type JSX } from "react"
 
 // 序列化数据结构
 export type SerializedImageTagNode = Spread<
@@ -109,157 +112,94 @@ function ImageTagComponent({
 }): JSX.Element {
   const [isHovered, setIsHovered] = useState(false)
   const [isCursorNearby, setIsCursorNearby] = useState(false)
-  const elementRef = useRef<HTMLSpanElement>(null)
+  const [editor] = useLexicalComposerContext()
 
-  // 监听选区变化，检测光标是否在 ImageTagNode "附近"
+  // 通过 Lexical editor 监听选区变化，检测光标是否在当前节点上
   useEffect(() => {
-    const checkSelection = () => {
-      const selection = window.getSelection()
-      const element = elementRef.current
-
-      if (!selection || !element) {
-        setIsCursorNearby(false)
-        return
-      }
-
-      // 检查原生选区是否与元素相交或包含元素
-      let nearby = false
-
-      if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0)
-
-        // 方法1：检查选区是否与元素相交
-        if (range.intersectsNode(element)) {
-          nearby = true
-        }
-
-        // 方法2：检查光标是否在元素前/后紧邻位置
-        // 获取选区的起始和结束位置的 DOM 节点
-        const startContainer = range.startContainer
-        const endContainer = range.endContainer
-
-        // 检查元素是否在选区的起始或结束位置
-        if (
-          element.contains(startContainer) ||
-          element.contains(endContainer)
-        ) {
-          nearby = true
-        }
-
-        // 方法3：检查选区的父元素是否是当前元素
-        const parentStart = startContainer.parentElement
-        const parentEnd = endContainer.parentElement
-        if (parentStart === element || parentEnd === element) {
-          nearby = true
-        }
-      }
-
-      setIsCursorNearby(nearby)
-    }
-
-    // 监听选区变化
-    document.addEventListener("selectionchange", checkSelection)
-    // 初始检查
-    checkSelection()
-
-    return () => {
-      document.removeEventListener("selectionchange", checkSelection)
-    }
-  }, [])
-
-  // 同时监听 Lexical 的选区变化（用于键盘导航）
-  useEffect(() => {
-    const editor = (
-      window as unknown as {
-        __lexicalEditor?: {
-          registerUpdateListener: (
-            callback: (arg: {
-              editorState: { read: (fn: () => void) => void }
-            }) => void
-          ) => () => void
-        }
-      }
-    ).__lexicalEditor
-
-    if (!editor) return
-
     const removeListener = editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
         const selection = $getSelection()
 
-        if (!$isRangeSelection(selection)) {
-          // 不要在这里设置 false，让 DOM 检查来处理
+        if ($isNodeSelection(selection)) {
+          // NodeSelection: 检查当前节点是否被选中
+          setIsCursorNearby(selection.has(nodeKey))
           return
         }
 
-        const anchor = selection.anchor
-        const focus = selection.focus
+        if ($isRangeSelection(selection)) {
+          const anchor = selection.anchor
+          const focus = selection.focus
 
-        // 检查光标是否 "紧邻" ImageTagNode
-        // 在 Lexical 中，DecoratorNode 的光标位置是 offset 0（前）或 1（后）
-        let nearby = false
-
-        // 如果 anchor 或 focus 指向当前节点
-        if (anchor.key === nodeKey || focus.key === nodeKey) {
-          nearby = true
-        }
-
-        // 如果选区是折叠的（单个光标）且在节点上
-        if (selection.isCollapsed()) {
-          if (anchor.key === nodeKey) {
-            nearby = true
+          // 检查 anchor 或 focus 是否指向当前节点
+          if (anchor.key === nodeKey || focus.key === nodeKey) {
+            setIsCursorNearby(true)
+            return
           }
         }
 
-        // 注意：这里我们不使用 setIsCursorNearby，
-        // 而是依赖上面的 DOM 检查，因为 DOM 检查更准确
-        if (nearby) {
-          setIsCursorNearby(true)
-        }
+        setIsCursorNearby(false)
       })
     })
 
     return () => removeListener()
-  }, [nodeKey])
+  }, [editor, nodeKey])
 
   // 计算最终样式：鼠标悬浮或光标在附近都显示高亮
   const isActive = isHovered || isCursorNearby
 
   return (
-    <span
-      ref={elementRef}
-      data-image-node-key={nodeKey}
-      // 样式：固定高度、垂直居中、与文字水平对齐，hover 或光标在附近时显示高亮效果
-      className={`
-        inline-flex items-center gap-1 px-1.5 h-[20px] mx-0.5 
-        rounded-full border align-text-bottom select-none
-        transition-all duration-150 ease-in-out
-        ${
-          isActive
-            ? "bg-blue-50 border-blue-400 shadow-sm ring-1 ring-blue-200"
-            : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-        }
-      `}
-      contentEditable={false}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* 图片缩略图 - 圆形头像，垂直居中 */}
-      <img
-        src={src}
-        alt={name}
-        className="w-4 h-4 object-cover rounded-full shrink-0"
-      />
-      {/* 文件名 - 最多10个字，垂直居中 */}
-      <span
-        className={`
-        text-[13px] whitespace-nowrap leading-none
-        ${isActive ? "text-blue-700" : "text-gray-700"}
-      `}
-      >
-        {truncateText(name, 10)}
-      </span>
-    </span>
+    <HoverCard.Root openDelay={400} closeDelay={100}>
+      <HoverCard.Trigger asChild>
+        <span
+          data-image-node-key={nodeKey}
+          className={`
+            inline-flex items-center gap-1 px-1.5 h-[20px] mx-0.5
+            rounded-full border align-text-bottom select-none
+            transition-all duration-150 ease-in-out
+            ${
+              isActive
+                ? "bg-blue-50 border-blue-400 shadow-sm ring-1 ring-blue-200"
+                : "bg-gray-50 border-gray-300 hover:bg-gray-100"
+            }
+          `}
+          contentEditable={false}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <img
+            src={src}
+            alt={name}
+            className="w-4 h-4 object-cover rounded-full shrink-0"
+          />
+          <span
+            className={`
+            text-[13px] whitespace-nowrap leading-none
+            ${isActive ? "text-blue-700" : "text-gray-700"}
+          `}
+          >
+            {truncateText(name, 10)}
+          </span>
+        </span>
+      </HoverCard.Trigger>
+      <HoverCard.Portal>
+        <HoverCard.Content
+          side="top"
+          sideOffset={8}
+          className="z-50 rounded-lg bg-white p-2 shadow-lg border border-gray-200
+            data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95
+            data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
+        >
+          <img
+            src={src}
+            alt={name}
+            className="max-w-[240px] max-h-[240px] object-contain rounded"
+          />
+          <div className="text-xs text-gray-500 mt-1 text-center truncate max-w-[240px]">
+            {name}
+          </div>
+        </HoverCard.Content>
+      </HoverCard.Portal>
+    </HoverCard.Root>
   )
 }
 

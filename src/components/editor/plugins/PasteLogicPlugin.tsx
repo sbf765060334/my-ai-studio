@@ -44,24 +44,32 @@ export function PasteLogicPlugin({
         // 阻止默认粘贴行为
         event.preventDefault()
 
-        // 处理每个图片文件
-        imageFiles.forEach(async (file) => {
-          try {
-            const result = await onImageUpload(file)
-            if (result) {
-              // 在编辑器中插入图片标签节点
-              editor.update(() => {
-                const selection = $getSelection()
-                if (selection) {
-                  const imageNode = $createImageTagNode(result.url, result.name)
-                  selection.insertNodes([imageNode])
-                }
-              })
+        // 按顺序上传所有图片，然后一次性插入
+        const processImages = async () => {
+          const nodes: { url: string; name: string }[] = []
+          for (const file of imageFiles) {
+            try {
+              const result = await onImageUpload(file)
+              if (result) {
+                nodes.push({ url: result.url, name: result.name })
+              }
+            } catch (error) {
+              console.error("粘贴图片处理失败:", error)
             }
-          } catch (error) {
-            console.error("粘贴图片处理失败:", error)
           }
-        })
+          if (nodes.length > 0) {
+            editor.update(() => {
+              const selection = $getSelection()
+              if (selection) {
+                const imageNodes = nodes.map((n) =>
+                  $createImageTagNode(n.url, n.name)
+                )
+                selection.insertNodes(imageNodes)
+              }
+            })
+          }
+        }
+        processImages().catch(console.error)
 
         // 返回 true 表示命令已处理
         return true

@@ -6,14 +6,14 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable"
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin"
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin"
 import { type LexicalEditor } from "lexical"
-import React, { useState } from "react"
+import React from "react"
 import { ImageTagNode } from "./ImageTagNode"
 import { EditorRefPlugin } from "./plugins/EditorRefPlugin"
 import { OnChangePlugin } from "./plugins/OnChangePlugin"
 import { PasteLogicPlugin } from "./plugins/PasteLogicPlugin"
 
 // 编辑器配置
-const initialConfig = {
+const createInitialConfig = () => ({
   namespace: "ZivisionEditor",
   theme: {
     root: "relative w-full min-h-[56px] max-h-[200px] cursor-text px-1 py-[2px] bg-transparent outline-none text-sm leading-[25px] text-[#363636] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent",
@@ -25,7 +25,7 @@ const initialConfig = {
     console.error("Lexical Editor Error:", error)
   },
   nodes: [ImageTagNode], // 注册自定义节点
-}
+})
 
 // 编辑器 Props
 interface ZivisionEditorProps {
@@ -42,15 +42,9 @@ export function ZivisionEditor({
   onChange,
   onImageUpload,
 }: ZivisionEditorProps) {
-  const [isFocused, setIsFocused] = useState(false)
-
   return (
-    <LexicalComposer initialConfig={initialConfig}>
-      <div
-        className={`relative w-full min-h-[56px] max-h-[200px] ${
-          isFocused ? "border-gray-400" : ""
-        }`}
-      >
+    <LexicalComposer initialConfig={createInitialConfig()}>
+      <div className="relative w-full min-h-[56px] max-h-[200px]">
         {/* 富文本插件 */}
         <RichTextPlugin
           contentEditable={
@@ -60,8 +54,6 @@ export function ZivisionEditor({
                 wordWrap: "break-word",
                 whiteSpace: "pre-wrap",
               }}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
             />
           }
           placeholder={

@@ -13,11 +13,6 @@ export function EditorRefPlugin({ onEditorReady }: EditorRefPluginProps): null {
   const [editor] = useLexicalComposerContext()
 
   useEffect(() => {
-    // 将编辑器实例保存到全局，供图片标签组件使用
-    ;(window as unknown as { __lexicalEditor: LexicalEditor }).__lexicalEditor =
-      editor
-
-    // 通知父组件编辑器已准备好
     onEditorReady(editor)
   }, [editor, onEditorReady])
 
