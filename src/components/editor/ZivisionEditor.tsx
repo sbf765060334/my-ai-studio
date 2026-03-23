@@ -33,6 +33,7 @@ interface ZivisionEditorProps {
   onEditorReady: (editor: LexicalEditor) => void
   onChange: (content: string) => void
   onImageUpload: (file: File) => Promise<{ url: string; name: string } | null>
+  onImageInserted?: (url: string, name: string) => void
 }
 
 // ZivisionEditor 主组件
@@ -41,6 +42,7 @@ export function ZivisionEditor({
   onEditorReady,
   onChange,
   onImageUpload,
+  onImageInserted,
 }: ZivisionEditorProps) {
   return (
     <LexicalComposer initialConfig={createInitialConfig()}>
@@ -77,7 +79,10 @@ export function ZivisionEditor({
         <OnChangePlugin onChange={onChange} />
 
         {/* 粘贴图片处理插件 */}
-        <PasteLogicPlugin onImageUpload={onImageUpload} />
+        <PasteLogicPlugin
+          onImageUpload={onImageUpload}
+          onImageInserted={onImageInserted}
+        />
       </div>
     </LexicalComposer>
   )

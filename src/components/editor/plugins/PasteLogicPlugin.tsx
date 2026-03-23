@@ -13,10 +13,12 @@ import { $createImageTagNode, $isImageTagNode } from "../ImageTagNode"
 // 处理粘贴图片的插件
 interface PasteLogicPluginProps {
   onImageUpload: (file: File) => Promise<{ url: string; name: string } | null>
+  onImageInserted?: (url: string, name: string) => void
 }
 
 export function PasteLogicPlugin({
   onImageUpload,
+  onImageInserted,
 }: PasteLogicPluginProps): null {
   const [editor] = useLexicalComposerContext()
 
@@ -45,49 +47,42 @@ export function PasteLogicPlugin({
         // 阻止默认粘贴行为
         event.preventDefault()
 
-        // 为每个图片立即插入 loading 节点，然后后台上传
-        for (const file of imageFiles) {
-          let nodeKey: string | null = null
+        // 一次性插入所有 loading 节点，收集 nodeKey 后再逐个上传
+        editor.update(() => {
+          const selection = $getSelection()
+          if (!selection) return
 
-          // 立即插入 loading 节点
-          editor.update(() => {
-            const selection = $getSelection()
-            if (selection) {
-              const imageNode = $createImageTagNode("", file.name)
-              selection.insertNodes([imageNode])
-              nodeKey = imageNode.getKey()
-            }
-          })
+          for (const file of imageFiles) {
+            const imageNode = $createImageTagNode("", file.name)
+            selection.insertNodes([imageNode])
+            const capturedKey = imageNode.getKey()
 
-          if (!nodeKey) continue
+            // 后台上传
+            onImageUpload(file)
+              .then((result) => {
+                editor.update(() => {
+                  const node = $getNodeByKey(capturedKey)
+                  if (!node || !$isImageTagNode(node)) return
 
-          // 后台上传
-          const capturedKey = nodeKey
-          onImageUpload(file)
-            .then((result) => {
-              editor.update(() => {
-                const node = $getNodeByKey(capturedKey)
-                if (!node || !$isImageTagNode(node)) return // 节点已删除，忽略
-
-                if (result) {
-                  node.setSrc(result.url)
-                } else {
-                  // 上传返回 null（验证失败等），删除 loading 节点
-                  node.remove()
-                }
+                  if (result) {
+                    node.setSrc(result.url)
+                    onImageInserted?.(result.url, result.name)
+                  } else {
+                    node.remove()
+                  }
+                })
               })
-            })
-            .catch((error) => {
-              console.error("粘贴图片处理失败:", error)
-              // 上传失败，删除 loading 节点
-              editor.update(() => {
-                const node = $getNodeByKey(capturedKey)
-                if (node && $isImageTagNode(node)) {
-                  node.remove()
-                }
+              .catch((error) => {
+                console.error("粘贴图片处理失败:", error)
+                editor.update(() => {
+                  const node = $getNodeByKey(capturedKey)
+                  if (node && $isImageTagNode(node)) {
+                    node.remove()
+                  }
+                })
               })
-            })
-        }
+          }
+        })
 
         // 返回 true 表示命令已处理
         return true
@@ -98,7 +93,7 @@ export function PasteLogicPlugin({
     return () => {
       removeListener()
     }
-  }, [editor, onImageUpload])
+  }, [editor, onImageUpload, onImageInserted])
 
   return null
 }

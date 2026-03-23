@@ -5,19 +5,13 @@ import { ZivisionEditor } from "@/components/editor"
 import {
   $createImageTagNode,
   $isImageTagNode,
+  ImageTagNode,
 } from "@/components/editor/ImageTagNode"
 import { message } from "antd"
 import { $getSelection, $getNodeByKey } from "lexical"
 import { type LexicalEditor } from "lexical"
 import { ArrowUp, Paperclip } from "lucide-react"
 import { useRef, useState } from "react"
-
-// 上传的图片类型
-interface UploadedImage {
-  id: string
-  url: string
-  name: string
-}
 
 // 模拟历史项目数据类型
 interface RecentProject {
@@ -29,12 +23,9 @@ interface RecentProject {
 
 export default function Home() {
   const [inputValue, setInputValue] = useState("")
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([])
+  const [imageCount, setImageCount] = useState(0)
   const editorRef = useRef<LexicalEditor | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // 生成唯一ID
-  const generateId = () => Math.random().toString(36).substring(2, 9)
 
   // 模拟历史项目数据 - 设为空数组表示没有历史记录
   const [recentProjects] = useState<RecentProject[]>([])
@@ -42,6 +33,17 @@ export default function Home() {
   // 编辑器准备就绪回调
   const handleEditorReady = (editor: LexicalEditor) => {
     editorRef.current = editor
+    // 监听 ImageTagNode 的增删变动，实时更新计数
+    editor.registerMutationListener(ImageTagNode, (mutations) => {
+      let delta = 0
+      for (const [, mutation] of mutations) {
+        if (mutation === "created") delta += 1
+        else if (mutation === "destroyed") delta -= 1
+      }
+      if (delta !== 0) {
+        setImageCount((prev) => Math.max(0, prev + delta))
+      }
+    })
   }
 
   // 编辑器内容变化回调
@@ -49,7 +51,7 @@ export default function Home() {
     setInputValue(content)
   }
 
-  // 图片上传回调（用于粘贴和文件选择）
+  // 图片上传回调（用于粘贴插件）
   const handleImageUpload = async (
     file: File
   ): Promise<{ url: string; name: string } | null> => {
@@ -62,8 +64,6 @@ export default function Home() {
     try {
       // 上传到 OSS
       const url = await uploadImage(file)
-      const newImage: UploadedImage = { id: generateId(), url, name: file.name }
-      setUploadedImages((prev) => [...prev, newImage])
       return { url, name: file.name }
     } catch (error) {
       console.error("上传失败:", error)
@@ -85,59 +85,48 @@ export default function Home() {
     const editor = editorRef.current
     if (!editor) return
 
-    for (const file of Array.from(files)) {
-      // 验证文件类型
+    const imageFiles = Array.from(files).filter((file) => {
       if (!file.type.startsWith("image/")) {
         message.warning(`${file.name} 不是图片文件`)
-        continue
+        return false
       }
+      return true
+    })
 
-      // 1. 立即插入 loading 节点，获取 nodeKey
-      let nodeKey: string | null = null
-      editor.update(() => {
-        const selection = $getSelection()
-        if (selection) {
-          const imageNode = $createImageTagNode("", file.name)
-          selection.insertNodes([imageNode])
-          nodeKey = imageNode.getKey()
-        }
-      })
+    if (imageFiles.length === 0) return
 
-      if (!nodeKey) continue
+    // 一次性插入所有 loading 节点，在回调内拿到 nodeKey 后发起上传
+    editor.update(() => {
+      const selection = $getSelection()
+      if (!selection) return
 
-      // 2. 后台上传，捕获 nodeKey
-      const capturedKey = nodeKey
-      uploadImage(file)
-        .then((url) => {
-          const newImage: UploadedImage = {
-            id: generateId(),
-            url,
-            name: file.name,
-          }
-          setUploadedImages((prev) => [...prev, newImage])
+      for (const file of imageFiles) {
+        const imageNode = $createImageTagNode("", file.name)
+        selection.insertNodes([imageNode])
+        const capturedKey = imageNode.getKey()
 
-          // 3. 上传成功 → 更新节点 src
-          editor.update(() => {
-            const node = $getNodeByKey(capturedKey)
-            if (node && $isImageTagNode(node)) {
-              node.setSrc(url)
-            }
-            // 节点已被删除则静默忽略
+        uploadImage(file)
+          .then((url) => {
+            editor.update(() => {
+              const node = $getNodeByKey(capturedKey)
+              if (node && $isImageTagNode(node)) {
+                node.setSrc(url)
+              }
+            })
           })
-        })
-        .catch((error) => {
-          console.error("上传失败:", error)
-          message.error(`${file.name} 上传失败`)
+          .catch((error) => {
+            console.error("上传失败:", error)
+            message.error(`${file.name} 上传失败`)
 
-          // 4. 上传失败 → 删除 loading 节点
-          editor.update(() => {
-            const node = $getNodeByKey(capturedKey)
-            if (node && $isImageTagNode(node)) {
-              node.remove()
-            }
+            editor.update(() => {
+              const node = $getNodeByKey(capturedKey)
+              if (node && $isImageTagNode(node)) {
+                node.remove()
+              }
+            })
           })
-        })
-    }
+      }
+    })
 
     // 清空 input，允许重复选择同一文件
     if (fileInputRef.current) {
@@ -206,9 +195,9 @@ export default function Home() {
                 </button>
 
                 {/* 图片计数徽章 */}
-                {uploadedImages.length > 0 && (
+                {imageCount > 0 && (
                   <span className="text-xs text-gray-500 ml-1">
-                    {uploadedImages.length} 张图片
+                    {imageCount} 张图片
                   </span>
                 )}
               </div>
